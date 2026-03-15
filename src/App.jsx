@@ -325,14 +325,14 @@ function CompareTab({P}) {
       </div>
 
         {/* Footer */}
-        <div style={{marginTop:16,background:"white",border:"1px solid #e2e8f0",borderRadius:10,padding:"12px 16px",fontSize:12,color:"#64748b",lineHeight:1.8}}>
+        <div style={{marginTop:16,background:"#dbeafe",border:"1px solid #bfdbfe",borderRadius:10,padding:"12px 16px",fontSize:12,color:"#64748b",lineHeight:1.8}}>
           <div style={{color:"#1e293b"}}>
             © 2026 <strong>Fabrice LALLEMAND</strong> avec l'aide de{" "}
             <a href="https://claude.ai" target="_blank" rel="noreferrer" style={{color:"#7c3aed",textDecoration:"none"}}>Claude.ai</a>.
             {" "}Code source sous licence{" "}
             <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noreferrer" style={{color:"#7c3aed",textDecoration:"none"}}>MIT</a>
             {" — "}
-            <a href="https://github.com/fabricelallemand/chenille-vorace" target="_blank" rel="noreferrer" style={{color:"#7c3aed",textDecoration:"none"}}>🖥 Code source sur GitHub</a>.
+            <a href="https://github.com/fabricelallemand15/app_chenille" target="_blank" rel="noreferrer" style={{color:"#7c3aed",textDecoration:"none"}}>🖥 Code source sur GitHub</a>.
           </div>
           <div style={{fontSize:11,color:"#94a3b8"}}>Utilisation, modification et distribution libres — attribution requise</div>
         </div>
@@ -403,7 +403,7 @@ export default function App() {
   const [key,setKey]=useState(0);
   const apply=newP=>{setP(newP);setKey(k=>k+1);setShowEdit(false);};
   return (
-    <div style={{minHeight:"100vh",background:"#f8fafc",color:"#1e293b",fontFamily:"system-ui,sans-serif",padding:"16px"}}>
+    <div style={{minHeight:"100vh",background:"#f5f3ff",color:"#1e293b",fontFamily:"system-ui,sans-serif",padding:"16px"}}>
       <div style={{maxWidth:520,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:16}}>
           <div style={{fontSize:22,fontWeight:"bold",color:"#1e293b"}}>🐛 La Chenille Vorace</div>
@@ -427,7 +427,7 @@ export default function App() {
           </div>
         )}
         {showEdit&&<EditPyramid P={P} setP={apply}/>}
-        <div style={{background:"white",borderRadius:12,padding:"14px",border:"1px solid #e2e8f0",boxShadow:"0 1px 3px #0001"}} key={key+tab}>
+        <div style={{background:"#ede9fe",borderRadius:12,padding:"14px",border:"1px solid #ddd6fe",boxShadow:"0 1px 3px #0001"}} key={key+tab}>
           {tab==="naive"&&<NaiveTab P={P}/>}
           {tab==="bottomup"&&<BottomUpTab P={P}/>}
           {tab==="topdown"&&<TopDownTab P={P}/>}
@@ -442,7 +442,7 @@ export default function App() {
             Code source sous licence{" "}
             <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noreferrer" style={{color:"#7c3aed",textDecoration:"none"}}>MIT</a>
             {" — "}
-            <a href="https://github.com/fabricelallemand/chenille-vorace" target="_blank" rel="noreferrer" style={{color:"#7c3aed",textDecoration:"none"}}>🖥 Code source sur GitHub</a>.
+            <a href="https://github.com/fabricelallemand15/app_chenille" target="_blank" rel="noreferrer" style={{color:"#7c3aed",textDecoration:"none"}}>🖥 Code source sur GitHub</a>.
           </div>
           <div style={{fontSize:11,color:"#94a3b8"}}>Utilisation, modification et distribution libres — attribution requise</div>
         </div>
