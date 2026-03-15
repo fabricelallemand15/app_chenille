@@ -85,7 +85,7 @@ function buildTopDownSteps(P) {
 }
 
 // ── Pyramid SVG ───────────────────────────────────────────────────────────────
-function PyramidSVG({P,highlights={},optPath=[],cTable=null}) {
+function PyramidSVG({P,highlights={},optPath=[],cTable=null,flashKey=0}) {
   const n=P.length,W=420,cellW=54,cellH=52,totalH=n*cellH+30;
   return (
     <svg width={W} height={totalH} style={{display:"block",margin:"0 auto"}}>
@@ -94,6 +94,7 @@ function PyramidSVG({P,highlights={},optPath=[],cTable=null}) {
         const hl=highlights[key], onOpt=optPath.some(p=>p.i===i&&p.j===j);
         let fill="#f8fafc",stroke="#cbd5e1",sw=1.5,tc="#1e293b";
         if(hl==="active"){fill="#dbeafe";stroke="#3b82f6";sw=2.5;}
+        if(hl==="redundant"){fill="#fee2e2";stroke="#ef4444";sw=3;}
         if(hl==="hit"){fill="#dcfce7";stroke="#22c55e";sw=2.5;}
         if(hl==="store"){fill="#fef3c7";stroke="#f59e0b";sw=2.5;}
         if(hl==="base"){fill="#ede9fe";stroke="#7c3aed";sw=2;}
@@ -107,12 +108,21 @@ function PyramidSVG({P,highlights={},optPath=[],cTable=null}) {
           lines=<><line x1={cx} y1={cy+16} x2={cx2l} y2={cy2-16} stroke="#e2e8f0" strokeWidth="1.5"/><line x1={cx} y1={cy+16} x2={cx2r} y2={cy2-16} stroke="#e2e8f0" strokeWidth="1.5"/></>;
         }
         const cVal=cTable?(cTable[i]&&cTable[i][j]!==null?cTable[i][j]:null):null;
+        const isFlashing=hl==="redundant";
         return (
           <g key={key}>
             {lines}
-            <circle cx={cx} cy={cy} r={20} fill={fill} stroke={stroke} strokeWidth={sw}/>
-            <text x={cx} y={cy+(cVal!==null?-3:1)} textAnchor="middle" dominantBaseline="middle" fill={tc} fontSize="14" fontWeight="bold">{val}</text>
-            {cVal!==null&&<text x={cx} y={cy+11} textAnchor="middle" dominantBaseline="middle" fill="#7c3aed" fontSize="10" fontWeight="bold">{cVal}</text>}
+            <foreignObject x={cx-20} y={cy-20} width={40} height={40}>
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                key={isFlashing?flashKey:0}
+                className={isFlashing&&flashKey>0?"flash-redundant":""}
+                style={{width:40,height:40,borderRadius:"50%",background:fill,
+                  border:`${sw}px solid ${stroke}`,display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",boxSizing:"border-box"}}>
+                <span style={{color:tc,fontSize:14,fontWeight:"bold",lineHeight:1}}>{val}</span>
+                {cVal!==null&&<span style={{color:"#7c3aed",fontSize:10,fontWeight:"bold",lineHeight:1}}>{cVal}</span>}
+              </div>
+            </foreignObject>
           </g>
         );
       }))}
@@ -157,21 +167,78 @@ function EditPyramid({P,setP}) {
 function NaiveTab({P}) {
   const steps=buildNaiveSteps(P);
   const [idx,setIdx]=useState(0);
+  const [flashKey,setFlashKey]=useState(0);
+  const prevIdx=useRef(-1);
   const step=steps[idx];
+
+  // un appel est redondant si la même case a déjà été appelée AVANT lui
+  const seenAll={}, isRedundant=[];
+  steps.forEach((s,i)=>{
+    if(s.type==="call"){
+      const k=`${s.i},${s.j}`;
+      isRedundant[i]=(seenAll[k]||0)>0;
+      seenAll[k]=(seenAll[k]||0)+1;
+    } else { isRedundant[i]=false; }
+  });
+  const totalDups=isRedundant.filter(Boolean).length;
+
+  // count redundant calls up to current step (inclusive)
+  const dupsSoFar=isRedundant.slice(0,idx+1).filter(Boolean).length;
+
+  const isRedundantCall=step&&isRedundant[idx];
+
+  useEffect(()=>{
+    if(idx!==prevIdx.current && isRedundantCall) setFlashKey(k=>k+1);
+    prevIdx.current=idx;
+  },[idx,isRedundantCall]);
+
   const hl={};
-  if(step){if(step.type==="call")hl[`${step.i},${step.j}`]="active";if(step.type==="return")hl[`${step.i},${step.j}`]="store";}
-  const calls=steps.filter(s=>s.type==="call");
-  const seen={},dups=[];
-  calls.forEach(s=>{const k=`${s.i},${s.j}`;seen[k]=(seen[k]||0)+1;if(seen[k]>1&&!dups.includes(k))dups.push(k);});
-  const dupCount=calls.filter(s=>dups.includes(`${s.i},${s.j}`)).length-dups.length;
+  if(step){
+    if(step.type==="call") hl[`${step.i},${step.j}`]=isRedundantCall?"redundant":"active";
+    if(step.type==="return") hl[`${step.i},${step.j}`]="store";
+  }
+
   return (
     <div>
+      <style>{`
+        @keyframes flashRed {
+          0%   { transform: scale(1);   }
+          25%  { transform: scale(1.35); }
+          50%  { transform: scale(1);   }
+          75%  { transform: scale(1.25); }
+          100% { transform: scale(1);   }
+        }
+        @keyframes popCount {
+          0%   { transform: scale(1); }
+          50%  { transform: scale(1.5); }
+          100% { transform: scale(1); }
+        }
+        .flash-redundant { animation: flashRed 0.5s ease; }
+        .pop-count { animation: popCount 0.4s ease; }
+      `}</style>
+
       <div style={{background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13,color:"#991b1b"}}>
-        ⚠️ <strong>{calls.length}</strong> appels récursifs au total, dont <strong style={{color:"#dc2626"}}>{dupCount}</strong> redondants (mêmes cases recalculées plusieurs fois).
+        ⚠️ <strong>{steps.filter(s=>s.type==="call").length}</strong> appels récursifs au total, dont <strong style={{color:"#dc2626"}}>{totalDups}</strong> redondants.
       </div>
-      <PyramidSVG P={P} highlights={hl}/>
-      <div style={{textAlign:"center",marginTop:8,color:"#64748b",fontSize:13,minHeight:22}}>
-        {step&&(step.type==="call"?`📞 Appel sur (${step.i},${step.j})`:`↩️ Retour : C[${step.i}][${step.j}] = ${step.val}`)}
+
+      <PyramidSVG P={P} highlights={hl} flashKey={isRedundantCall?flashKey:0}/>
+
+      {/* redundant call counter */}
+      <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:10,marginTop:10}}>
+        <span style={{fontSize:13,color:"#64748b"}}>Appels redondants :</span>
+        <span key={flashKey} className={isRedundantCall&&flashKey>0?"pop-count":""}
+          style={{fontSize:22,fontWeight:"bold",color:dupsSoFar>0?"#dc2626":"#94a3b8",
+            background:dupsSoFar>0?"#fef2f2":"#f8fafc",border:`2px solid ${dupsSoFar>0?"#fca5a5":"#e2e8f0"}`,
+            borderRadius:8,padding:"2px 14px",minWidth:40,textAlign:"center",transition:"color .3s"}}>
+          {dupsSoFar}
+        </span>
+        <span style={{fontSize:12,color:"#94a3b8"}}>/ {totalDups}</span>
+      </div>
+
+      <div style={{textAlign:"center",marginTop:6,color: isRedundantCall?"#dc2626":"#64748b",fontSize:13,minHeight:22,fontWeight:isRedundantCall?"bold":"normal"}}>
+        {step&&(step.type==="call"
+          ? (isRedundantCall ? `🔁 Appel REDONDANT sur (${step.i},${step.j}) — déjà calculé !` : `📞 Appel sur (${step.i},${step.j})`)
+          : `↩️ Retour : C[${step.i}][${step.j}] = ${step.val}`)}
       </div>
       <StepControls idx={idx} setIdx={setIdx} total={steps.length}/>
     </div>
